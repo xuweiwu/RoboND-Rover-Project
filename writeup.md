@@ -38,11 +38,7 @@ You're reading it!
 
 ### Notebook Analysis
 #### 1. Run the functions provided in the notebook on test images (first with the test data provided, next on data you have recorded). Add/modify functions to allow for color selection of obstacles and rock samples.
-The color selection of obstacles is achieved by inverting the binary image of the navigable terrain `threshed_navigable`:
-```python
-threshed_obstacle = np.ones_like(threshed_navigable) - threshed_navigable
-```
-Here `threshed_obstacle` is the obtained binary image of obstacles.
+The color selection of obstacles is achieved by inverting the binary image of the navigable terrain `threshed_navigable`: `threshed_obstacle = np.ones_like(threshed_navigable) - threshed_navigable`. Here `threshed_obstacle` is the obtained binary image of obstacles.
 
 For color selection of rock samples a new function `color_thresh_rock()` is added:
 ```python
@@ -87,31 +83,27 @@ The main steps in `process_image()` include:
 
 #### 1. Fill in the `perception_step()` (at the bottom of the `perception.py` script) and `decision_step()` (in `decision.py`) functions in the autonomous mapping scripts and an explanation is provided in the writeup of how and why these functions were modified as they were.
 Modifications in `perception_step()`:
-
 * The most part of the modifications in `perception_step()` are similar to those in `process_image()` in the notebook, including the perspective transformation, the color selection, and the coordinate conversion and transformation. 
 
-* An additional vision image, saved as `Rover.vision_image`, is updated to show the instantaneous pixel positions of navigable terrain/obstacles/rock samples in the rover camera's view. After each update the vision image is overlaid with the black area of a warped white image to show the actual vision area. 
+* An additional vision image, saved as `Rover.vision_image`, is updated to show the instantaneous pixel positions of navigable terrain/obstacles/rock samples in the rover camera's view (line 129 to 134). After each update the vision image is overlaid with the black area of a warped white image to show the actual vision area. 
 
-* To enhence the map fidelity, `Rover.worldmap` will only be updated if the roll and pitch angles are smaller than 0.5 degree, since the performed coordinate transformation is only valid for 2D situations and dosen't take the roll and pitch angles into account.
+* To enhence the map fidelity, `Rover.worldmap` will only be updated if the roll and pitch angles are smaller than 0.5 degree (line 157), since the performed coordinate transformation is only valid for 2D situations and dosen't take the roll and pitch angles into account.
 
-* The rover-centric polar coordinates of the navigable terrain pixels `(Rover.nav_dists, Rover.nav_angles)` and rock sample pixels `(Rover.rock_dists, Rover.rock_angles)` are calculated by using the function `to_polar_coords()`. These additional variables are to be utilized in `decision_step()` to steer the rover.
+* The rover-centric polar coordinates of the navigable terrain pixels `(Rover.nav_dists, Rover.nav_angles)` and rock sample pixels `(Rover.rock_dists, Rover.rock_angles)` are calculated by using the function `to_polar_coords()` (line 164 to 165). These additional variables are to be utilized in `decision_step()` to steer the rover.
 
 Modifications in `decision_step()`:
-* The rover has two basic driving modes: `forward` and `stop`. The conversion between the modes are determined by the extent of the navigable terrain. Two thresholds, `Rover.go_forward` and `Rover.go_forward`, are set for the mode conversion.
+* The rover has two basic driving modes: `forward` mode (line 16 to 95) and `stop` mode (line 98 to 121). The conversion between the modes are determined by the extent of the navigable terrain. Two thresholds, `Rover.go_forward` and `Rover.go_forward`, are set for the mode conversion. The part of `stop` mode uses the example codes and is not modified.
 
-* If the navigable terrain is sufficient (`len(Rover.nav_angles) >= Rover.stop_forward`) and no rock sampels are detected (np.size(Rover.rock_angles) == 0), the rover will keep going forward with its velocity limited to a preset maximum value. The steering angel is set to the average angle of the navigable terrain polar coordinates.
+* line 18 to 57: if the navigable terrain is sufficient (`len(Rover.nav_angles) >= Rover.stop_forward`) and no rock sampels are detected (`np.size(Rover.rock_angles) == 0`), the rover will keep going forward with its velocity limited to a preset maximum value. The steering angel is set to the average angle of the navigable terrain polar coordinates. If the rover got stuck, i.e. its verlocity is close to zero but the throttle was already set to the maximum value, then the throttle is set to zero to allow a 4-wheel turning (line 21 to 29). If the rover runs into a loop, then use the maximum/minimum angle to steer the rover, instead of using the average angle (line 33 to 43 and line 49 to 56).
 
-* If during the forward mode any pixels of rock samples are detected (`np.size(Rover.rock_dists) > 0`), then the rover will be turned towards the position of the nearest sample. As the rover approaches the sample, its velocity is limited, first a
-
+* line 59 to 87: if during the `forward` mode any pixels of rock samples are detected (`np.size(Rover.rock_dists) > 0`), then the rover will be turned towards the position of the nearest sample. As the rover approaches the sample, its velocity is limited to a certain range to prevent passing through the sample (line 69 to 76). When the rover is close enough, it will stop to pick the sample up. If the nearest sample pixel is out of the navigable terrain, the rover will drive into the navigable area at first (line 80 to 87).
 
 #### 2. Launching in autonomous mode your rover can navigate and map autonomously.  Explain your results and how you might improve them in your writeup.  
 
 **Note: running the simulator with different choices of resolution and graphics quality may produce different results, particularly on different machines!  Make a note of your simulator settings (resolution and graphics quality set on launch) and frames per second (FPS output to terminal by `drive_rover.py`) in your writeup when you submit the project so your reviewer can reproduce your results.**
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+The screen resolution is chosen as 1024 x 600 and the graphics quality is chosen to 'Fastest'. During the autonomous mode the FPS is between 10 to 15. The modified `perception_step()` and `decision_step()` can achieve the mapping of at least 40% of the environment with about 80% fidelity. Normally 2 to 3 rock samples can be found (appearing in the map as white dots) and picked up.
 
+Generally, the techniques for optimizing the fidelity, picking up samples, and preventing the rover from getting stuck forever work fine. However, rock samples that are located between big obstacles cannot be found effectively, as the camera cannot capture the images of those samples in time before the rover drives away from the obstacles. Furthermore, the rover will still get stuck among small obstacles, since the rover keeps trying to climb over them. Finally, the mapping rate cannot go up further, because the rover runs into previously explored areas frequently.
 
-
-![alt text][image3]
-
-
+To improve the mapping rate, one can modify the searching behaviour of the rover such that "it explores the environment by always keeping a wall on its left or right", as suggested in the tipps of the Udacity Sample Return Robot Challenge.

@@ -74,9 +74,13 @@ Color selection with the recorded image:
 #### 2. Populate the `process_image()` function with the appropriate analysis steps to map pixels identifying navigable terrain, obstacles and rock samples into a worldmap.  Run `process_image()` on your test data using the `moviepy` functions provided to create video output of your result. 
 The main steps in `process_image()` include:
 * The perspective transformation from rover camera's view into top-down view. First, the source and destination points are determined. After that, the function `perspect_transform()` performs the transformation by invoking the OpenCV functions `cv2.getPerspectiveTransform()` and `cv2.warpPerspective()`.
+
 * The color selection for navigable terrain/obstacles/rock samples, implemented as explained above.
-* The conversion of pixel positions into rover-centric coordinates. The function `rover_coords()` is applied to perform the conversion, which takes the binary images of navigable terrain/obstacles/rock samples as input and returns the corresponding rover-centric coordinates. 
-* The trnsformation of rover-centric coordinates into world coordinates. The coordinate transformation is further divided into a rotation and a following translation. The function `rotate_pix()` performs the 2D rotation by using the values of the rover's yaw angle. The function `translate_pix()` performs the translation by adding the values of the rover's position in world space to the rotated coordinates. These two functions are called internally in the function `pix_to_world()` to accomplish the whole transformation step. 
+
+* The conversion of pixel positions into rover-centric coordinates. The function `rover_coords()` is applied to perform the conversion, which takes the binary images of navigable terrain/obstacles/rock samples as input and returns the corresponding rover-centric coordinates.
+
+* The trnsformation of rover-centric coordinates into world coordinates. The coordinate transformation is further divided into a rotation and a following translation. The function `rotate_pix()` performs the 2D rotation by using the values of the rover's yaw angle. The function `translate_pix()` performs the translation by adding the values of the rover's position in world space to the rotated coordinates. These two functions are called internally in the function `pix_to_world()` to accomplish the whole transformation step.
+
 * The generation of a worldmap. The woldmap, saved as `data.worldmap`, is initialized as a color image with 200 x 200 pixels (each pixel represents 1 x 1 m) and all its RGB channels are filled with zeros, i.e. the worldmap is completely black at the beginning. As the rover explores the environment, the values of channel R, G, B accumulate at the pixels (described with world coordinates) of obstacles, rock samples, and navigable terrain, respectively. As a result, the navigable terrain will be marked with blue color and the obstacles with red color. Since rock samples are also seen as a kind of obstacles, the positions of the rock samples in the map will be marked by red and green at the same time and the combined color is yellow.
 
 ### Autonomous Navigation and Mapping
@@ -86,18 +90,18 @@ Modifications in `perception_step()`:
 
 * The most part of the modifications in `perception_step()` are similar to those in `process_image()` in the notebook, including the perspective transformation, the color selection, and the coordinate conversion and transformation. 
 
-* An additional vision image, saved as `Rover.vision_image`, is updated to show the instantaneous pixel positions of navigable terrain/obstacles/rock samples in the rover camera's view:
-```python
-  Rover.vision_image[:,:,0] = threshed_obstacle*255
-  Rover.vision_image[:,:,1] = threshed_rock*255
-  Rover.vision_image[:,:,2] = threshed_navigable*255
-```
-  Herr
-  
+* An additional vision image, saved as `Rover.vision_image`, is updated to show the instantaneous pixel positions of navigable terrain/obstacles/rock samples in the rover camera's view. After each update the vision image is overlaid with the black area of a warped white image to show the actual vision area. 
 
-* Furthermore, the rover-centric polar coordinates of the navigable terrain pixels `(Rover.nav_dists, Rover.nav_angles)` and rock sample pixels `(Rover.rock_dists, Rover.rock_angles)` are calculated by using the function `to_polar_coords()`. These additional variables are to be utilized in `decision_step()` to steer the rover.
+* To enhence the map fidelity, `Rover.worldmap` will only be updated if the roll and pitch angles are smaller than 0.5 degree, since the performed coordinate transformation is only valid for 2D situations and dosen't take the roll and pitch angles into account.
+
+* The rover-centric polar coordinates of the navigable terrain pixels `(Rover.nav_dists, Rover.nav_angles)` and rock sample pixels `(Rover.rock_dists, Rover.rock_angles)` are calculated by using the function `to_polar_coords()`. These additional variables are to be utilized in `decision_step()` to steer the rover.
 
 Modifications in `decision_step()`:
+* The rover has two basic driving modes: `forward` and `stop`. The conversion between the modes are determined by the extent of the navigable terrain. Two thresholds, `Rover.go_forward` and `Rover.go_forward`, are set for the mode conversion.
+
+* If the navigable terrain is sufficient (`len(Rover.nav_angles) >= Rover.stop_forward`) and no rock sampels are detected (np.size(Rover.rock_angles) == 0), the rover will keep going forward with its velocity limited to a preset maximum value. The steering angel is set to the average angle of the navigable terrain polar coordinates.
+
+* If during the forward mode any pixels of rock samples are detected (`np.size(Rover.rock_dists) > 0`), then the rover will be turned towards the position of the nearest sample. As the rover approaches the sample, its velocity is limited, first a
 
 
 #### 2. Launching in autonomous mode your rover can navigate and map autonomously.  Explain your results and how you might improve them in your writeup.  

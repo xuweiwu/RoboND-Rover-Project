@@ -57,7 +57,8 @@ def color_thresh_rock(img, rgb_thresh=([130, 210], [110, 190], [0, 80])):
 ```
 The function sets a value range for each channel of RGB individually to specify the yellow/gold color of rock samples. Those ranges are obtained through investigations of recorded example images of rock samples.
 
-The following two figures show the resulsts of the color selection with provided and recorded images, respectively.
+The following figures show the resulsts of the color selection with provided and recorded images.
+
 Provided image:
 
 ![alt text][image1]

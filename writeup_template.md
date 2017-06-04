@@ -61,7 +61,7 @@ def color_thresh_rock(img, rgb_thresh=([130, 210], [110, 190], [0, 80])):
 ```
 The function sets a value range for each channel of RGB individually to specify the yellow/gold color of rock samples. Those ranges are obtained through investigations of self-recorded example images in an interactive matplotlib window.
 
-The following two figures show the resulsts of the color selection with provided and recorded images respectively.
+The following two figures show the resulsts of the color selection with provided and recorded images, respectively.
 Provided image:
 ![alt text][image1]
 Color selection with the provided image:
@@ -72,7 +72,12 @@ Color selection with the recorded image:
 ![alt text][image4]
 
 #### 2. Populate the `process_image()` function with the appropriate analysis steps to map pixels identifying navigable terrain, obstacles and rock samples into a worldmap.  Run `process_image()` on your test data using the `moviepy` functions provided to create video output of your result. 
-The main steps in `process_image()` include the color selection for navigable terrain/obstacles/rock samples, the conversion of pixel positions to rover-centric coordinates, and the trnsformation of rover-centric coordinates into world coordinates. The color selection step is implemented as explained above. For the coordinate conversion the function `rover_coords()` is applied, which takes the binary images of navigable terrain/obstacles/rock samples as input and returns the corresponding rover-centric coordinates. The transformation of coordinates can be further divided into one rotation and one translation, using the function `rotate_pix()` and `translate_pix()` , respectively. These two functions are called internally in the function `pix_to_world()` to accomplish the whole transformation step. The woldmap, stored as `data.worldmap` in the data container, is initialized as a color image with 200 x 200 pixels (each pixel is 1 x 1 m) and all RGB channels are filled with zeros, i.e. the worldmap is completely black at the beginning. As the rover explores the environment, the values of channel R, G, B accumulate at the pixels of obstacles, rock samples, and navigable terrain in the worldmap, respectively. As a result, the navigable terrain will be marked as blue and the obstacles as red. Since rock samples are also seen as a kind of obstacles, the positions of the rock samples in the map will be marked by red and green at the same time and this color combination is yellow.
+The main steps in `process_image()` include:
+* The perspective transformation from rover camera's view into top-down view. First, the source and destination points are determined. After that, the 
+* The color selection for navigable terrain/obstacles/rock samples, implemented as explained above.
+* The conversion of pixel positions into rover-centric coordinates. The function `rover_coords()` is applied to perform the conversion, which takes the binary images of navigable terrain/obstacles/rock samples as input and returns the corresponding rover-centric coordinates. 
+* The trnsformation of rover-centric coordinates into world coordinates. The coordinate transformation is further divided into a rotation and a following translation. The function `rotate_pix()` performs the 2D rotation by using the values of the rover's yaw angle. The function `translate_pix()` performs the translation by adding the values of the rover's position in world space to the rotated coordinates. These two functions are called internally in the function `pix_to_world()` to accomplish the whole transformation step. 
+* The generation of a worldmap. The woldmap is initialized as a color image with 200 x 200 pixels (each pixel represents 1 x 1 m) and all its RGB channels are filled with zeros, i.e. the worldmap is completely black at the beginning. As the rover explores the environment, the values of channel R, G, B accumulate at the pixels (described with world coordinates) of obstacles, rock samples, and navigable terrain, respectively. As a result, the navigable terrain will be marked with blue color and the obstacles with red color. Since rock samples are also seen as a kind of obstacles, the positions of the rock samples in the map will be marked by red and green at the same time and the combined color is yellow.
 
 ### Autonomous Navigation and Mapping
 

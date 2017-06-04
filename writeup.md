@@ -55,7 +55,7 @@ def color_thresh_rock(img, rgb_thresh=([130, 210], [110, 190], [0, 80])):
     color_select_rock[in_range] = 1
     return color_select_rock
 ```
-The function sets a value range for each channel of RGB individually to specify the yellow/gold color of rock samples. Those ranges are obtained through investigations of self-recorded example images in an interactive matplotlib window.
+The function sets a value range for each channel of RGB individually to specify the yellow/gold color of rock samples. Those ranges are obtained through investigations of recorded example images of rock samples.
 
 The following two figures show the resulsts of the color selection with provided and recorded images, respectively.
 Provided image:
@@ -71,7 +71,7 @@ Color selection with the recorded image:
 The main steps in `process_image()` include:
 * The perspective transformation from rover camera's view into top-down view. First, the source and destination points are determined. After that, the function `perspect_transform()` performs the transformation by invoking the OpenCV functions `cv2.getPerspectiveTransform()` and `cv2.warpPerspective()`.
 
-* The color selection for navigable terrain/obstacles/rock samples, implemented as explained above.
+* The color selection for navigable terrain/obstacles/rock samples. It is implemented as explained above.
 
 * The conversion of pixel positions into rover-centric coordinates. The function `rover_coords()` is applied to perform the conversion, which takes the binary images of navigable terrain/obstacles/rock samples as input and returns the corresponding rover-centric coordinates.
 
@@ -89,14 +89,14 @@ Modifications in `perception_step()`:
 
 * To enhence the map fidelity, `Rover.worldmap` will only be updated if the roll and pitch angles are smaller than 0.5 degree (line 157), since the performed coordinate transformation is only valid for 2D situations and dosen't take the roll and pitch angles into account.
 
-* The rover-centric polar coordinates of the navigable terrain pixels `(Rover.nav_dists, Rover.nav_angles)` and rock sample pixels `(Rover.rock_dists, Rover.rock_angles)` are calculated by using the function `to_polar_coords()` (line 164 to 165). These additional variables are to be utilized in `decision_step()` to steer the rover.
+* The rover-centric polar coordinates of the navigable terrain pixels `(Rover.nav_dists, Rover.nav_angles)` and rock sample pixels `(Rover.rock_dists, Rover.rock_angles)` are calculated by using the function `to_polar_coords()` (line 164 to 165). These additional variables are to be utilized in `decision_step()` to set the steering angle and the throttle/brake of the rover.
 
 Modifications in `decision_step()`:
 * The rover has two basic driving modes: `forward` mode (line 16 to 95) and `stop` mode (line 98 to 121). The conversion between the modes are determined by the extent of the navigable terrain. Two thresholds, `Rover.go_forward` and `Rover.go_forward`, are set for the mode conversion. The part of `stop` mode uses the example codes and is not modified.
 
-* line 18 to 57: if the navigable terrain is sufficient (`len(Rover.nav_angles) >= Rover.stop_forward`) and no rock sampels are detected (`np.size(Rover.rock_angles) == 0`), the rover will keep going forward with its velocity limited to a preset maximum value. The steering angel is set to the average angle of the navigable terrain polar coordinates. If the rover got stuck, i.e. its verlocity is close to zero but the throttle was already set to the maximum value, then the throttle is set to zero to allow a 4-wheel turning (line 21 to 29). If the rover runs into a loop, then use the maximum/minimum angle to steer the rover, instead of using the average angle (line 33 to 43 and line 49 to 56).
+* line 18 to 57: if the navigable terrain is sufficient (`len(Rover.nav_angles) >= Rover.stop_forward`) and no rock sampels are detected (`np.size(Rover.rock_angles) == 0`), the rover will keep going forward with its velocity limited to a preset maximum value. The steering angel is set to the average angle of the navigable terrain polar coordinates. If the rover got stuck, i.e. its verlocity is close to zero but the throttle was already set to the maximum value, then the throttle is set to zero to allow a 4-wheel turning (line 21 to 29). If the rover ran into a loop, then the maximum/minimum angle will be used to steer the rover, instead of using the average angle (line 33 to 43 and line 49 to 56).
 
-* line 59 to 87: if during the `forward` mode any pixels of rock samples are detected (`np.size(Rover.rock_dists) > 0`), then the rover will be turned towards the position of the nearest sample. As the rover approaches the sample, its velocity is limited to a certain range to prevent passing through the sample (line 69 to 76). When the rover is close enough, it will stop to pick the sample up. If the nearest sample pixel is out of the navigable terrain, the rover will drive into the navigable area at first (line 80 to 87).
+* line 59 to 87: if during the `forward` mode any pixels of rock samples are detected (`np.size(Rover.rock_dists) > 0`), then the rover will be turned towards the position of the nearest sample. As the rover approaches the sample, its velocity is limited to a certain range to prevent passing through the sample (line 69 to 76). When the rover is close enough, it will stop to pick the sample up. If the nearest sample pixel is located outside of the navigable terrain, the rover will be steered into the navigable area at first (line 80 to 87).
 
 #### 2. Launching in autonomous mode your rover can navigate and map autonomously.  Explain your results and how you might improve them in your writeup.  
 
@@ -104,6 +104,6 @@ Modifications in `decision_step()`:
 
 The screen resolution is chosen as 1024 x 600 and the graphics quality is chosen to 'Fastest'. During the autonomous mode the FPS is between 10 to 15. The modified `perception_step()` and `decision_step()` can achieve the mapping of at least 40% of the environment with about 80% fidelity. Normally 2 to 3 rock samples can be found (appearing in the map as white dots) and picked up.
 
-Generally, the techniques for optimizing the fidelity, picking up samples, and preventing the rover from getting stuck forever work fine. However, rock samples that are located between big obstacles cannot be found effectively, as the camera cannot capture the images of those samples in time before the rover drives away from the obstacles. Furthermore, the rover will still get stuck among small obstacles, since the rover keeps trying to climb over them. Finally, the mapping rate cannot go up further, because the rover runs into previously explored areas frequently.
+Generally, the applied techniques for optimizing the fidelity, picking up samples, and preventing the rover from getting stuck forever, meet their goals. However, rock samples that are located between big obstacles cannot be found effectively, as the camera cannot capture the images of those samples in time, before the rover drives away from the obstacles. Furthermore, the rover will still get stuck among small obstacles, since it keeps trying to climb over them. Finally, the mapping rate cannot go up further, because the rover runs into previously explored areas frequently.
 
 To improve the mapping rate, one can modify the searching behaviour of the rover such that "it explores the environment by always keeping a wall on its left or right", as suggested in the tipps of the Udacity Sample Return Robot Challenge.
